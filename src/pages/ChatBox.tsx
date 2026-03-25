@@ -1,15 +1,114 @@
-import { useEffect, useRef, useState } from "react";
-import { dummyMessagesData, dummyUserData } from "../assets/assets";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageIcon, SendHorizontal, X } from "lucide-react";
+import { useAuth } from "@clerk/react";
+import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
+import { useParams } from "react-router-dom";
+import api from "../api/base";
+import {
+  addMessage,
+  fetchMessages,
+  resetMessage,
+} from "../features/messages/messages.slice";
+import type { User } from "../assets/assets";
+import toast from "react-hot-toast";
+
 
 const ChatBox = () => {
-  const messages = dummyMessagesData;
+  const messages = useAppSelector((state) => state.messages.messages);
+  const { userId: id } = useParams();
+
+  const { getToken } = useAuth();
+  const dispatch = useAppDispatch();
   const [text, setText] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [user, setUser] = useState(dummyUserData);
+  const [user, setUser] = useState<User | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
 
-  const handleMessage = async () => {};
+  const connections = useAppSelector(
+    (state) => state.Connections.connections
+  );
+
+  const fetchUserMessage = useCallback(async () => {
+    const token = await getToken();
+    if (!token) return;
+    if (!id) return;
+    try {
+      dispatch(fetchMessages({ token, id }));
+    } catch (error) {
+      toast.error("something went wrong");
+      console.log(error);
+    }
+  }, [dispatch, getToken, id]);
+
+  const handleMessage = async () => {
+    try {
+      if (!id) return;
+      if (!user) return;
+
+      if (!text && !image) return;
+      const token = await getToken();
+      const formData = new FormData();
+      formData.append("message", text);
+      formData.append("image", image || "");
+      formData.append("to_user_id", id);
+      const { data } = await api.post("/message/send", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      if (data?.success) {
+        setText("");
+        setImage(null);
+        dispatch(addMessage(data.message));
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = await getToken();
+      if (!token) return;
+      if (!id) return;
+      try {
+        const { data } = await api.get(`user/account/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (data?.success) {
+          setUser(data.user);
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchUser();
+  }, [getToken, id]);
+
+  useEffect(() => {
+    fetchUserMessage();
+    return () => {
+      dispatch(resetMessage());
+    };
+  }, [dispatch, fetchUserMessage, id]);
+
+
+
+  useEffect(() => {
+    if (connections.length > 0) {
+      const connection = connections.find((connection) => connection._id === id);
+      if (connection) {
+        setUser(connection);
+      }
+    }
+  }, [connections, id])
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -23,7 +122,7 @@ const ChatBox = () => {
        gap-2 p-2 md:px-10 xl:pl-42 bg-linear-0-to-r from-indigo-50 to-purple-50 border-b border-gray-300"
         >
           <img
-            src={user.profile_picture}
+            src={user.profile_picture.url}
             alt=""
             className="size-8 rounded-full"
           />
@@ -43,14 +142,14 @@ const ChatBox = () => {
               .map((message, index) => (
                 <div
                   key={index}
-                  className={`flex flex-col ${message.from_user_id === user._id ? "items-start" : "items-end"} `}
+                  className={`flex flex-col ${String(message.from_user_id?._id) === String(user._id) ? "items-start" : "items-end"} `}
                 >
                   <div
-                    className={`p-2 text-sm max-w-sm bg-white text-slate-700 rounded-lg shadow ${message.to_user_id !== user._id ? "rounded-bl-none" : "rounded-br-none"} `}
+                    className={`p-2 text-sm max-w-sm bg-white text-slate-700 rounded-lg shadow ${String(message.to_user_id?._id) !== String(user._id) ? "rounded-bl-none" : "rounded-br-none"} `}
                   >
                     {message.message_type === "image" && (
                       <img
-                        src={message.media_url}
+                        src={message.media_url.url}
                         alt=""
                         className="w-full max-w-sm rounded-lg mb-1"
                       />

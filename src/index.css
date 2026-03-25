@@ -33,3 +33,53 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-in-out;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn-posts {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+
+
+@keyframes enter {
+  0% {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes leave {
+  0% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: enter 0.3s ease forwards;
+}
+
+.animate-leave {
+  animation: leave 0.2s ease forwards;
+}

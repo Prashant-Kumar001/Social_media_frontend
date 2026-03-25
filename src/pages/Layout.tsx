@@ -2,11 +2,11 @@ import { Outlet } from "react-router-dom";
 import SideBar from "../components/SideBar";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { dummyUserData } from "../assets/assets";
 import Loader from "../components/Loader";
+import { useAppSelector } from "../hooks/reduxHooks";
 
 const Layout = () => {
-  const user = dummyUserData;
+  const user = useAppSelector((state) => state.user.user);
   const [openSideBar, setSideBar] = useState(false);
 
   return user ? (

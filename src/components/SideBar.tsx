@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { assets, dummyUserData } from "../assets/assets";
+import { assets, type User } from "../assets/assets";
 import MenuItems from "./MenuItems";
 import { CirclePlus, LogOut } from "lucide-react";
 import { useClerk, UserButton } from "@clerk/react";
+import { useAppSelector } from "../hooks/reduxHooks";
 
 type SideBarProps = {
   openSideBar: boolean;
@@ -11,13 +12,13 @@ type SideBarProps = {
 
 const SideBar = ({ openSideBar, setSideBar }: SideBarProps) => {
   const navigate = useNavigate();
-  const user = dummyUserData;
+  const user = useAppSelector((state) => state.user.user) as User | null;
   const { signOut } = useClerk();
   return (
     <div
       className={`w-60 h-full  xl:w-72 bg-white border-e border-gray-200 flex flex-col justify-between items-center max-sm:absolute top-0 border-0 z-20
         transition-all duration-300 ease-in-out
-      ${openSideBar ? "translate-x-0" : "-translate-x-full"} 
+      ${openSideBar ? "translate-x-0" : "-translate-x-full"}
       sm:translate-x-0`}
     >
       <div className="w-full">
@@ -37,17 +38,17 @@ const SideBar = ({ openSideBar, setSideBar }: SideBarProps) => {
           Create Post
         </Link>
       </div>
-      <div className="w-full border-t border-gray-200 p-4  px-7 flex items-center justify-between  ">
+      <div className="w-full border-t border-gray-200 py-2  px-2 flex items-center justify-between  ">
         <div className="flex gap-2 items-center cursor-pointer ">
           <UserButton />
           <div>
-            <h1 className="text-sm font-medium">{user.full_name}</h1>
-            <p className="text-sm text-gray-700 ">@{user.username}</p>
+            <h1 className="text-sm font-medium">{user?.full_name}</h1>
+            <p className="text-sm text-gray-700 ">@{user?.username}</p>
           </div>
         </div>
         <LogOut
           onClick={() => signOut()}
-          className="w-4.5 text-gray-400 hover:text-gray-700 transition cursor-pointer  "
+          className="w-6  text-gray-400 hover:text-gray-700 transition cursor-pointer  "
         />
       </div>
     </div>

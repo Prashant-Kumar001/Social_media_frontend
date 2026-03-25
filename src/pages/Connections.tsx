@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Users,
   UserPlus,
@@ -7,17 +7,20 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-  dummyConnectionsData as connections,
-  dummyFollowersData as followers,
-  dummyFollowingData as following,
-  dummyPendingConnectionsData as pending,
-  type User,
-} from "../assets/assets";
+
+import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
+import type { User } from "../assets/assets";
+import { useAuth } from "@clerk/react";
+import { fetchConnections } from "../features/connections/connection.slice";
+import toast from "react-hot-toast";
+import api from "../api/base";
 
 const Connections = () => {
   const navigate = useNavigate();
-
+  const { getToken } = useAuth();
+  const dispatch = useAppDispatch();
+  const { connections, followers, following, pendingConnections } =
+    useAppSelector((state) => state.Connections);
   const [currentTad, setCurrentTad] = React.useState<
     "Followers" | "Following" | "Pending" | "Connections"
   >("Followers");
@@ -29,9 +32,71 @@ const Connections = () => {
   }[] = [
     { label: "Followers", value: followers, icon: Users },
     { label: "Following", value: following, icon: UserCheck },
-    { label: "Pending", value: pending, icon: UserRoundPen },
+    { label: "Pending", value: pendingConnections, icon: UserRoundPen },
     { label: "Connections", value: connections, icon: UserPlus },
   ];
+
+  useEffect(() => {
+    getToken().then((token) => {
+      if (!token) {
+        navigate("/login");
+      } else {
+        dispatch(fetchConnections(token));
+      }
+    });
+  }, [dispatch, getToken, navigate]);
+
+  const handleUnfollow = async (id: string) => {
+    try {
+      const { data } = await api.post(
+        "/user/unfollow",
+        {
+          userId: id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${await getToken()}`,
+          },
+        },
+      );
+      if (data?.success) {
+        const token = await getToken();
+        dispatch(fetchConnections(token!));
+        toast.success(data.message ?? "now you unfollow this user");
+      } else {
+        toast.error(data.message ?? "something went wrong");
+      }
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message ?? "something went wrong");
+    }
+  };
+
+  const handleConnect = async (id: string) => {
+    try {
+      const { data } = await api.post(
+        "/connection/accept",
+        {
+          id: id,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${await getToken()}`,
+          },
+        },
+      );
+      if (data?.success) {
+        const token = await getToken();
+        dispatch(fetchConnections(token!));
+        toast.success(data.message ?? "now you are connected with this user");
+      } else {
+        toast.error(data.message ?? "something went wrong");
+      }
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message ?? "something went wrong");
+    }
+  };
 
   const selectedData = dataArray.find(
     (item) => item.label === currentTad,
@@ -82,13 +147,13 @@ const Connections = () => {
         </div>
 
         <div className="flex flex-wrap gap-6 mt-6">
-          {selectedData?.map((connection) => (
+          {selectedData?.map((connection, index) => (
             <div
-              key={connection._id}
+              key={index}
               className="w-full max-w-sm p-6 bg-white shadow rounded-md"
             >
               <img
-                src={connection.profile_picture}
+                src={connection.profile_picture.url}
                 alt=""
                 className="rounded-full w-12 h-12 shadow-md  mx-auto"
               />
@@ -111,12 +176,18 @@ const Connections = () => {
                   View Profile
                 </button>
                 {currentTad === "Following" && (
-                  <button className="w-full p-2 text-sm rounded bg-slate-100 hover:bg-slate-200 active:scale-95 transition text-slate-800 cursor-pointer">
-                    Following
+                  <button
+                    onClick={() => handleUnfollow(connection._id)}
+                    className="w-full p-2 text-sm rounded bg-slate-100 hover:bg-slate-200 active:scale-95 transition text-slate-800 cursor-pointer"
+                  >
+                    unfollow
                   </button>
                 )}
                 {currentTad === "Pending" && (
-                  <button className="w-full p-2 text-sm rounded bg-slate-100 hover:bg-slate-200 active:scale-95 transition text-slate-800 cursor-pointer">
+                  <button
+                    onClick={() => handleConnect(connection._id)}
+                    className="w-full p-2 text-sm rounded bg-slate-100 hover:bg-slate-200 active:scale-95 transition text-slate-800 cursor-pointer"
+                  >
                     Accept
                   </button>
                 )}

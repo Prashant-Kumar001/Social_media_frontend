@@ -1,5 +1,9 @@
 import { ArrowLeft, ImagePlus, Type, X } from "lucide-react";
 import { useState } from "react";
+import api from "../api/base";
+import { useAuth } from "@clerk/react";
+import toast from "react-hot-toast";
+
 
 type Props = {
   setShowCreateStory: React.Dispatch<React.SetStateAction<boolean>>;
@@ -31,6 +35,7 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
   const [media, setMedia] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { getToken } = useAuth();
 
   const handleModeChange = (newMode: "media" | "text") => {
     setMode(newMode);
@@ -47,7 +52,33 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
     const file = e.target.files?.[0];
     if (file) {
       setMedia(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      if (file.type.includes("video")) {
+        if (file.size > 10000000) {
+          toast.error("Video size should be less than 10MB");
+          setMedia(null);
+          setPreviewUrl(null);
+        }
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(previewUrl!);
+          if (video.duration > 60) {
+            toast.error("Video duration should be less than 60 seconds");
+            setMedia(null);
+            setPreviewUrl(null);
+          } else {
+            setPreviewUrl(URL.createObjectURL(file));
+          }
+        };
+      } else if (file.type.includes("image")) {
+        if (file.size > 5000000) {
+          toast.error("Image size should be less than 5MB");
+          setMedia(null);
+          setPreviewUrl(null);
+        } else {
+          setPreviewUrl(URL.createObjectURL(file));
+        }
+      }
     }
   };
 
@@ -63,25 +94,28 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
     const formData = new FormData();
 
     if (mode === "text") {
-      formData.append("type", "text");
-      formData.append("background", background);
-      formData.append("text", text);
+      formData.append("media_type", "text");
+      formData.append("background_color", background);
+      formData.append("content", text);
     }
 
+    const fileType = media?.type?.split("/")[0];
+
     if (mode === "media" && media) {
-      formData.append("type", "media");
+      formData.append("media_type", fileType === "image" ? "image" : "video");
       formData.append("media", media);
     }
 
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:4000/api/stories", {
-        method: "POST",
-        body: formData,
+      const { data } = await api.post("/story/create", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${await getToken()}`,
+        },
       });
-
-      await res.json();
+      console.log(data);
 
       setShowCreateStory(false);
       fetchStories();
@@ -109,7 +143,6 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
           <div className="w-9 h-9" />
         </div>
 
-       
         <div className="flex bg-white/10 rounded-lg p-1 mb-4">
           {["text", "media"].map((m) => (
             <button
@@ -126,7 +159,6 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
             </button>
           ))}
         </div>
-
 
         <div
           className="h-64 rounded-xl overflow-hidden flex items-center justify-center relative"
@@ -169,7 +201,6 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
                     />
                   )}
 
-               
                   <button
                     onClick={removeMedia}
                     className="absolute top-2 right-2 p-1 bg-black/60 rounded-full hover:bg-black"
@@ -182,7 +213,6 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
           )}
         </div>
 
-        
         {mode === "text" && (
           <div className="flex flex-wrap mt-4 gap-2 justify-center">
             {bgColor.map((color, index) => (
@@ -200,7 +230,6 @@ const CreateStory = ({ setShowCreateStory, fetchStories }: Props) => {
           </div>
         )}
 
-       
         <button
           onClick={handelCreateStory}
           disabled={

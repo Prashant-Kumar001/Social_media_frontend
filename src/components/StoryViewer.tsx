@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -34,7 +33,7 @@ const StoryViewer = ({ viewStory, onClose }: Props) => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [viewStory]);
+  }, [onClose, viewStory]);
 
   if (!viewStory) return null;
 
@@ -56,7 +55,7 @@ const StoryViewer = ({ viewStory, onClose }: Props) => {
         <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
           <div className="flex items-center gap-3 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full">
             <img
-              src={user.profile_picture}
+              src={user.profile_picture.url}
               alt=""
               className="w-9 h-9 rounded-full object-cover ring-2 ring-white/40"
             />
@@ -93,7 +92,7 @@ const StoryViewer = ({ viewStory, onClose }: Props) => {
 
           {media_type === "image" && (
             <img
-              src={media_url}
+              src={media_url.url}
               alt=""
               className="w-full h-full object-cover"
             />
@@ -101,7 +100,7 @@ const StoryViewer = ({ viewStory, onClose }: Props) => {
 
           {media_type === "video" && (
             <video
-              src={media_url}
+              src={media_url.url}
               autoPlay
               muted
               playsInline

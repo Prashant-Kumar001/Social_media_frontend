@@ -1,27 +1,25 @@
 import React from "react";
-import type { Post, User } from "../assets/assets";
+import type { User } from "../assets/assets";
 import { Calendar, MapPin, PenBox, Verified } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 const UserProfile = ({
   user,
-  posts,
   profileId,
   serShowEdit,
 }: {
   user: User;
-  posts: Post[];
   profileId: string | undefined;
   serShowEdit: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   return (
     <div className="relative py-4 px-6 md:mx-8 bg-white">
       <div className="flex flex-col md:flex-row items-center gap-6">
-        <div className="w-32 h-32 border-4 border-white shadow-lg absolute -top-16 rounded-full ">
+        <div className="   absolute -top-16 rounded-full  w-28 h-28 md:w-32 md:h-32  border-4 border-white shadow-xl overflow-hidden">
           <img
-            src={user.profile_picture}
+            src={user.profile_picture.url}
             alt=""
-            className="absolute rounded-full z-2"
+            className="absolute rounded-full w-32 h-32 z-2"
           />
         </div>
         <div className="w-full pt-16 md:pt-0 md:pl-36">
@@ -39,9 +37,8 @@ const UserProfile = ({
             {!profileId && (
               <button
                 onClick={() => serShowEdit(true)}
-                className="px-4 py-2 rounded-lg bg-linear-to-r from-indigo-500 to-purple-600 hover:from-indigo-700 hover:to-purple-800 active:scale-95 transition text-white cursor-pointer flex items-center gap-2 "
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-100 transition text-sm font-medium"
               >
-                {" "}
                 <PenBox className="w-4 h-4" />
                 Edit Profile
               </button>
@@ -66,7 +63,7 @@ const UserProfile = ({
           <div className="flex items-center gap-6 mt-6 border-t border-gray-200">
             <div>
               <span className="sm:text-xl font-bold text-gray-900 ">
-                {posts.length}
+                {user.posts.length}
               </span>
               <span className=" text-xs sm:text-sm font-bold text-gray-500 ml-1">
                 Posts

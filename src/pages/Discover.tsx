@@ -1,47 +1,61 @@
-import { useState, useMemo } from "react";
-import { dummyConnectionsData, dummyUserData } from "../assets/assets";
+import { useState, useEffect, useCallback } from "react";
+import { type User } from "../assets/assets";
 import UserCard from "../components/UserCard";
+import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/react";
+import api from "../api/base";
+import { fetchUser } from "../features/user/user.slice";
 
 const Discover = () => {
-  const [currentUser, setCurrentUser] = useState(dummyUserData);
-  const [pending, setPending] = useState<string[]>([]);
+  const currentUser = useAppSelector((state) => state.user.user) as User | null;
+
+  const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const users = dummyConnectionsData;
-  const handleFollow = (id: string) => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      following: [...prev.following, id],
-    }));
-  };
+  const { getToken } = useAuth();
+  const dispatch = useAppDispatch();
 
-  const handleUnfollow = (id: string) => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      following: prev.following.filter((u) => u !== id),
-    }));
-  };
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
 
-  const handleConnect = (id: string) => {
-    setPending((prev) => [...prev, id]);
+    setLoading(true);
 
-    setTimeout(() => {
-      setPending((prev) => prev.filter((u) => u !== id));
+    try {
+      const { data } = await api.get(`/user/discover?input=${query}`, {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      });
 
-      setCurrentUser((prev) => ({
-        ...prev,
-        connections: [...prev.connections, id],
-      }));
-    }, 2000);
-  };
+      if (data?.success) {
+        setUsers(data.users);
+        const token = await getToken();
+        dispatch(fetchUser(token!));
+      } else {
+        toast.error(data.message);
+      }
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) =>
-      `${user.full_name} ${user.username}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    );
-  }, [search, users]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch(search);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search, handleSearch]);
 
   return (
     <div className="h-screen overflow-y-scroll no-scrollbar bg-linear-to-b from-slate-50 to-white">
@@ -53,34 +67,32 @@ const Discover = () => {
           placeholder="Search people..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="
-    w-full mb-6 px-4 py-2
-    rounded-xl
-    bg-white/20
-    backdrop-blur-md
-    border border-white/30
-    text-gray-800 placeholder-gray-500
-    focus:outline-none
-    focus:bg-white/30
-    focus:border-indigo-400
-    focus:ring-2 focus:ring-indigo-300/40
-    transition-all duration-300 ease-in-out
-  "
+          className="w-full mb-6 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-200
+          focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all"
         />
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredUsers.map((user) => (
-            <UserCard
-              key={user._id}
-              user={user}
-              currentUser={currentUser}
-              onFollow={handleFollow}
-              onUnfollow={handleUnfollow}
-              onConnect={handleConnect}
-              pending={pending}
-            />
-          ))}
-        </div>
+        {loading && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 rounded-xl bg-gray-200"></div>
+            ))}
+          </div>
+        )}
+
+        {!loading && users.length > 0 && (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-all duration-300">
+            {users.map((user) => (
+              <UserCard key={user._id} user={user} currentUser={currentUser!} />
+            ))}
+          </div>
+        )}
+
+        {!loading && search && users.length === 0 && (
+          <div className="text-center text-gray-500 mt-10 animate-fade-in">
+            <p className="text-lg">No users found 😔</p>
+            <p className="text-sm">Try a different keyword</p>
+          </div>
+        )}
       </div>
     </div>
   );

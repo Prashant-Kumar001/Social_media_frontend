@@ -1,45 +1,84 @@
 import { useState } from "react";
 import { ImagePlus, X } from "lucide-react";
-import { dummyUserData } from "../assets/assets";
+import { useAppSelector } from "../hooks/reduxHooks";
+import type { User } from "../assets/assets";
+import toast from "react-hot-toast";
+import { useAuth } from "@clerk/react";
+import api from "../api/base";
 
 const CreatePost = () => {
   const [content, setContent] = useState("");
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<File[]>([]);
+  const [previewImages, setPreviewImages] = useState<string[]>([]); 
   const [loading, setLoading] = useState(false);
+  const { getToken } = useAuth();
 
-  const user = dummyUserData;
+  const user = useAppSelector((state) => state.user.user) as User | null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const newImages = Array.from(files).map((file) =>
-      URL.createObjectURL(file),
-    );
+    const fileArray = Array.from(files);
 
-    setImages((prev) => [...prev, ...newImages]);
+    setImages((prev) => [...prev, ...fileArray]);
+
+    const preview = fileArray.map((file) => URL.createObjectURL(file));
+    setPreviewImages((prev) => [...prev, ...preview]);
   };
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     if (!content && images.length === 0) return;
 
     setLoading(true);
+    const token = await getToken();
 
-    const newPost = {
-      content,
-      image_urls: images,
-      post_type: "post",
-    };
+    try {
+      const formData = new FormData();
 
-    console.log("POST DATA 👉", newPost);
+      formData.append("content", content);
 
-    setContent("");
-    setImages([]);
-    setLoading(false);
+      const postType =
+        content && images.length > 0
+          ? "text_image"
+          : images.length > 0
+            ? "image"
+            : "text";
+
+      formData.append("post_type", postType);
+
+      images.forEach((file) => {
+        formData.append("post_image", file);
+      });
+
+      console.log("FORM DATA 👉", formData);
+
+      const { data } = await api.post("/post/create", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data", 
+        },
+      });
+
+      if (data?.success) {
+        toast.success("Post created successfully");
+      } else {
+        toast.error(data?.message ?? "Something went wrong");
+      }
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message ?? "Something went wrong");
+    } finally {
+      setContent("");
+      setImages([]);
+      setPreviewImages([]);
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,16 +90,17 @@ const CreatePost = () => {
           </h1>
           <p className="text-slate-600">Share your thoughts with the world</p>
         </div>
+
         <div className="bg-white rounded-2xl shadow border p-5">
           <div className="flex items-center gap-3 mb-4">
             <img
-              src={user.profile_picture}
+              src={user?.profile_picture.url}
               alt=""
               className="w-10 h-10 rounded-full object-cover"
             />
             <div>
-              <p className="font-medium">{user.full_name}</p>
-              <p className="text-xs text-gray-500">@{user.username}</p>
+              <p className="font-medium">{user?.full_name}</p>
+              <p className="text-xs text-gray-500">@{user?.username}</p>
             </div>
           </div>
 
@@ -71,10 +111,9 @@ const CreatePost = () => {
             className="w-full border-none outline-none resize-none text-sm min-h-25"
           />
 
-          
-          {images.length > 0 && (
+          {previewImages.length > 0 && (
             <div className="grid grid-cols-2 gap-3 mt-4">
-              {images.map((img, index) => (
+              {previewImages.map((img, index) => (
                 <div key={index} className="relative">
                   <img
                     src={img}

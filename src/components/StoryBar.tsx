@@ -1,29 +1,51 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
-import { dummyStoriesData } from "../assets/assets";
+import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import type { Story } from "../assets/assets";
 import { formatDistanceToNow } from "date-fns";
 import CreateStory from "./CreateStory";
 import StoryViewer from "./StoryViewer";
+import api from "../api/base";
+import { useAuth } from "@clerk/react";
 
 const StoryBar = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [showModel, setShowModel] = useState(false);
   const [ViewStory, setViewStory] = useState<Story | null>(null);
-  const [, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const { getToken } = useAuth();
 
-  const fetchFeeds = async () => {
+  const fetchFeeds = useCallback(async () => {
+    const token = await getToken();
     setLoading(true);
-    setStories(dummyStoriesData);
-    setLoading(false);
-  };
+    try {
+      const { data } = await api.get("/story/account/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setStories(data?.stories || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
 
   useEffect(() => {
     fetchFeeds();
-  }, []);
+  }, [fetchFeeds]);
 
-  return (
+  return loading ? (
+    <div className="w-screen sm:w-[calc(100vw-240px)] lg:max-w-2xl no-scrollbar overflow-x-auto px-4">
+      <div>
+        <div className="flex gap-4 pb-5">
+          <div className="rounded-lg shadow-sm min-w-30 max-w-30 max-h-40 aspect-3/4 animate-pulse bg-gray-200" />
+          <div className="rounded-lg shadow-sm min-w-30 max-w-30 max-h-40 aspect-3/4 animate-pulse bg-gray-200" />
+          <div className="rounded-lg shadow-sm min-w-30 max-w-30 max-h-40 aspect-3/4 animate-pulse bg-gray-200" />
+        </div>
+      </div>
+    </div>
+  ) : (
     <div className="w-screen sm:w-[calc(100vw-240px)] lg:max-w-2xl no-scrollbar overflow-x-auto px-4 ">
       <div className="flex gap-4 pb-5">
         <div
@@ -46,14 +68,14 @@ const StoryBar = () => {
             className={`relative rounded-lg  shadow min-w-30 max-w-3p max-h-40 cursor-pointer hover:shadow-lg transition-all duration-200 bg-linear-to-b from-indigo-50 to-purple-600 hover:from-indigo-700 hover:to-purple-800 `}
           >
             <img
-              src={story.user.profile_picture}
+              src={story.user.profile_picture.url}
               alt={story.user.full_name}
-              className="absolute size-8 top-3 left-3 x-10 rounded-full ring ring-gray-100 shadow "
+              className="absolute size-8 top-3 left-3 x-10 object-cover rounded-full ring z-50 ring-gray-100 shadow "
             />
             <p className="absolute top-18 left-3 text-white/60 text-sm truncate max-w-24 ">
               {story.content}
             </p>
-            <p className="text-white absolute bottom-1 right-2 z-10 text-xs ">
+            <p className="text-white absolute bottom-1 right-2 z-10 text-[10px] ">
               {formatDistanceToNow(new Date(story.createdAt), {
                 addSuffix: true,
               })}
@@ -62,14 +84,15 @@ const StoryBar = () => {
               <div className="absolute inset-0 z-1 rounded-ld bg-black overflow-hidden  ">
                 {story.media_type === "image" ? (
                   <img
-                    src={story.media_url}
+                    src={story.media_url.url}
                     alt={story.content}
                     className="w-full h-full object-cover hover:scale-110 transition duration-300  opacity-70 hover:opacity-80 "
                   />
                 ) : (
                   <video
-                    src={story.media_url}
+                    src={story.media_url.url}
                     controls
+                    muted
                     className="w-full h-full object-cover hover:scale-110 transition-all duration-300 opacity-70 hover:opacity-80"
                   />
                 )}

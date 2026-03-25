@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import type { User } from "../assets/assets";
-
+import toast from "react-hot-toast";
+import { updateUser } from "../features/user/user.slice";
+import { useAuth } from "@clerk/react";
+import { useAppDispatch } from "../hooks/reduxHooks";
 type Props = {
   setShowEdit: React.Dispatch<React.SetStateAction<boolean>>;
   user: User;
@@ -14,19 +17,31 @@ const EditProfile = ({ setShowEdit, user }: Props) => {
 
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [coverPicture, setCoverPicture] = useState<File | null>(null);
+  const { getToken } = useAuth();
+  const dispatch = useAppDispatch();
+
+
 
   const handleSave = async () => {
-    const formData = new FormData();
+    const token = await getToken();
 
+    if (!token) return;
+
+    const formData = new FormData();
     formData.append("full_name", name);
     formData.append("username", username);
     formData.append("bio", bio);
     formData.append("location", location);
+    formData.append("profile", profilePicture || "");
+    formData.append("cover", coverPicture || "");
 
-    if (profilePicture) formData.append("profile_picture", profilePicture);
-    if (coverPicture) formData.append("cover_photo", coverPicture);
-
-    console.log("Submitting:", Object.fromEntries(formData));
+    try {
+      dispatch(updateUser({ formData, token }));
+      setShowEdit(false);
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message ?? "something went wrong");
+    }
   };
 
   return (
@@ -58,7 +73,8 @@ const EditProfile = ({ setShowEdit, user }: Props) => {
               src={
                 coverPicture
                   ? URL.createObjectURL(coverPicture)
-                  : user.cover_photo || "https://via.placeholder.com/800x200"
+                  : user.cover_photo.url ||
+                    "https://via.placeholder.com/800x200"
               }
               className="w-full rounded-2xl h-32 sm:h-44 object-cover"
             />
@@ -81,7 +97,8 @@ const EditProfile = ({ setShowEdit, user }: Props) => {
                 src={
                   profilePicture
                     ? URL.createObjectURL(profilePicture)
-                    : user.profile_picture || "https://via.placeholder.com/150"
+                    : user.profile_picture.url ||
+                      "https://via.placeholder.com/150"
                 }
                 className="w-20 h-20 sm:w-28 sm:h-28 rounded-full border-4 border-white object-cover"
               />
