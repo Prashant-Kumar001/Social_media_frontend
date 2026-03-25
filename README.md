@@ -1,73 +1,175 @@
-# React + TypeScript + Vite
+# 🌐 Social Media App — Frontend Documentation
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📌 Overview
 
-Currently, two official plugins are available:
+This is a modern social media web application built using React and TypeScript. The frontend is designed for scalability, performance, and a smooth user experience similar to platforms like Instagram and WhatsApp.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🚀 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Framework:** React (with Vite)
+* **Language:** TypeScript
+* **Routing:** React Router
+* **State Management:** React Hooks
+* **Authentication:** Clerk
+* **API Communication:** Axios
+* **Styling:** Tailwind CSS
+* **Date Handling:** date-fns
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📁 Project Structure
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+ ├── api/                # Axios base configuration
+ ├── assets/             # Static data & types
+ ├── components/         # Reusable UI components
+ ├── pages/              # Application pages
+ ├── hooks/              # Custom hooks
+ ├── utils/              # Utility functions
+ └── App.tsx             # Main app component
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🔐 Authentication
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Authentication is handled using Clerk.
+
+### Features:
+
+* Secure login/signup
+* Token-based authentication
+* User session management
+
+### Example:
+
+```ts
+const { user } = useUser();
+const { getToken } = useAuth();
 ```
+
+---
+
+## 📡 API Handling
+
+All API requests are handled using a centralized Axios instance.
+
+### Example:
+
+```ts
+const res = await api.get('/endpoint', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+```
+
+---
+
+## 💬 Messaging System
+
+### Features:
+
+* Real-time-like recent messages (polling)
+* Message grouping by user
+* Sorted by latest activity
+* Seen/unseen indicator
+
+### Key Logic:
+
+* Messages are grouped by sender
+* Latest message per sender is displayed
+* Sorted using timestamps
+
+---
+
+## ⏱️ Polling System
+
+Currently, the app uses polling to fetch updates every 30 seconds.
+
+### Implementation:
+
+```ts
+const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+useEffect(() => {
+  intervalRef.current = setInterval(fetchData, 30000);
+  return () => clearInterval(intervalRef.current!);
+}, []);
+```
+
+---
+
+## 🎨 UI & Styling
+
+* Built with Tailwind CSS
+* Responsive design
+* Clean and minimal layout
+
+### Components:
+
+* Chat list
+* Profile avatar
+* Notification indicators
+
+---
+
+## 😀 Emoji Support
+
+* Supports native emoji input
+* Can be extended using emoji picker libraries
+
+---
+
+## ⚡ Performance Optimizations
+
+* useCallback for memoized functions
+* useEffect dependency control
+* Efficient list rendering with keys
+
+---
+
+## 🔮 Future Improvements
+
+* WebSocket (Socket.io) for real-time updates
+* Typing indicators
+* Online/offline status
+* Push notifications
+* Media uploads optimization
+
+---
+
+## 🧪 Development Tips
+
+* Always type API responses
+* Avoid using index as key in lists
+* Handle null/undefined safely
+* Use reusable components
+
+---
+
+## 📦 Setup Instructions
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## 🤝 Contribution
+
+Feel free to contribute by improving UI, adding features, or optimizing performance.
+
+---
+
+## 📄 License
+
+This project is for educational and personal use.
+
+---
+
+🔥 Built with passion to create a scalable social media platform.
