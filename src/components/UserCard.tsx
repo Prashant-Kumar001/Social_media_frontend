@@ -1,4 +1,4 @@
-import {  MessageCircle, PlusIcon, Loader2 } from "lucide-react";
+import { MessageCircle, PlusIcon, Loader2 } from "lucide-react";
 import type { User } from "../assets/assets";
 import api from "../api/base";
 import { useAuth } from "@clerk/react";
@@ -79,7 +79,7 @@ const UserCard = ({ user, currentUser }: Props) => {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_LOCAL_DB}api/v1/connection/request`,
+        `${import.meta.env.VITE_BASEURL}api/v1/connection/request`,
         {
           method: "POST",
           headers: {
@@ -157,7 +157,7 @@ const UserCard = ({ user, currentUser }: Props) => {
               color="white"
             />
           )}
-        
+
           {currentUser.connections.includes(user._id) ? (
             <MessageCircle size={16} />
           ) : (

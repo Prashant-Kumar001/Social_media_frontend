@@ -52,7 +52,7 @@ const App = () => {
     if (!user?.id) return;
 
     const eventSource = new EventSource(
-      `${import.meta.env.VITE_LOCAL_DB}api/v1/message/${user.id}`,
+      `${import.meta.env.VITE_BASEURL}api/v1/message/${user.id}`,
     );
 
     eventSource.onmessage = (event) => {
