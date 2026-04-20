@@ -25,7 +25,10 @@ const Profile = () => {
 
   const { getToken } = useAuth();
 
+
   const targetUserId = profileId || currentUser?._id;
+
+  const isOwnProfile = !profileId || profileId === currentUser?._id;
 
   const fetchUser = useCallback(
     async (signal?: AbortSignal) => {
@@ -42,7 +45,10 @@ const Profile = () => {
         });
 
         if (data?.success) {
-          setUser(data.user);
+          if (!isOwnProfile) {
+            setUser(data.user);
+          }
+
           setPosts(data.posts || []);
         } else {
           toast.error("Failed to load profile");
@@ -53,24 +59,27 @@ const Profile = () => {
         }
       }
     },
-    [getToken, targetUserId],
+    [getToken, targetUserId, isOwnProfile],
   );
 
   useEffect(() => {
     const controller = new AbortController();
 
-    if (targetUserId) {
-      fetchUser(controller.signal);
+    if (!targetUserId) return;
+
+    if (isOwnProfile && currentUser) {
+      setUser(currentUser);
     }
 
+    fetchUser(controller.signal);
+
     return () => controller.abort();
-  }, [fetchUser, targetUserId]);
+  }, [fetchUser, targetUserId, isOwnProfile, currentUser]);
 
   if (!user) return <ProfileSkeleton />;
 
   return (
     <div className="h-screen overflow-x-scroll no-scrollbar bg-gray-50 py-6 px-4">
-      
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="bg-white rounded-2xl overflow-hidden shadow">
           <div className="h-40 md:h-56 bg-linear-to-r from-indigo-200 via-purple-200 to-pink-200">
@@ -90,7 +99,6 @@ const Profile = () => {
           />
         </div>
 
-        {/* TABS (Instagram style) */}
         <div className="border-b border-gray-200 flex justify-around text-sm font-medium">
           {["posts", "media"].map((tab) => (
             <button
@@ -109,7 +117,6 @@ const Profile = () => {
           ))}
         </div>
 
-        {/* POSTS */}
         {activeTab === "posts" && (
           <div className="space-y-4">
             {posts.length === 0 ? (
@@ -122,7 +129,6 @@ const Profile = () => {
           </div>
         )}
 
-        {/* MEDIA GRID */}
         {activeTab === "media" && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {posts

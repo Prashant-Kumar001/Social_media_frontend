@@ -20,19 +20,20 @@ export const updateUser = createAsyncThunk(
   "user/update",
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async ({ formData, token }: { formData: any; token: string }) => {
+    const toastId = toast.loading("Updating user...");
     const response = await api.post("/user/account/update", formData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
     if (response.data?.success) {
-      toast.success("User updated successfully");
+      toast.success("User updated successfully", { id: toastId });
       return response.data?.user;
     } else {
-      toast.error(response.data?.message || "Failed to update user");
+      toast.error(response.data?.message || "Failed to update user", { id: toastId });
       return null;
     }
-  },
+  }
 );
 
 const userSlice = createSlice({
@@ -48,6 +49,7 @@ const userSlice = createSlice({
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         if (action.payload) {
+          console.log(action.payload);
           state.user = action.payload;
         }
       });

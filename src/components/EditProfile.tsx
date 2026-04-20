@@ -19,6 +19,9 @@ const EditProfile = ({ setShowEdit, user }: Props) => {
   const [coverPicture, setCoverPicture] = useState<File | null>(null);
   const { getToken } = useAuth();
   const dispatch = useAppDispatch();
+  
+  
+
 
 
 

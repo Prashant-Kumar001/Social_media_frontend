@@ -19,7 +19,8 @@ const UserProfile = ({
           <img
             src={user.profile_picture.url}
             alt=""
-            className="absolute rounded-full w-32 h-32 z-2"
+            loading="lazy"
+            className="rounded-full w-32 h-32  object-fill "
           />
         </div>
         <div className="w-full pt-16 md:pt-0 md:pl-36">

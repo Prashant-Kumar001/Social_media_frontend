@@ -67,7 +67,7 @@ export type User = {
   followers: string[];
   following: string[];
   connections: string[];
-  posts: string[];
+  posts: Post[];
   is_verified: boolean;
   createdAt: string;
   updatedAt: string;
